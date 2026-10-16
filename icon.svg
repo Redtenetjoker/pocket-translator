@@ -1,13 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4f7cff"/>
-      <stop offset="1" stop-color="#8a5cff"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="#0b1220"/>
-  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#g)"/>
-  <text x="256" y="316" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="260" font-weight="bold" fill="#ffffff" text-anchor="middle">译</text>
-  <circle cx="384" cy="128" r="34" fill="#2fd48a" opacity="0.9"/>
-  <path d="M370 128 l10 10 l20 -22" stroke="#0b1220" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 硬投影 -->
+  <rect x="44" y="44" width="452" height="452" rx="72" fill="#111111"/>
+  <!-- 主块 -->
+  <rect x="16" y="16" width="452" height="452" rx="72" fill="#ffd84d" stroke="#111111" stroke-width="16"/>
+  <!-- 顶部标签条 -->
+  <rect x="120" y="52" width="272" height="52" rx="10" fill="#7be8d8" stroke="#111111" stroke-width="10"/>
+  <text x="256" y="92" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="30" font-weight="900" fill="#111111" text-anchor="middle">TRANSLATE</text>
+  <!-- 主字 -->
+  <text x="242" y="368" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="240" font-weight="900" fill="#111111" text-anchor="middle">译</text>
+  <!-- 绿色对勾贴纸 -->
+  <rect x="368" y="336" width="96" height="96" rx="16" fill="#57d9a3" stroke="#111111" stroke-width="10" transform="rotate(8 416 384)"/>
+  <path d="M390 388 l18 18 l38 -42" stroke="#111111" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
