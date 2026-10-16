@@ -8,9 +8,10 @@ import HomePage from './components/HomePage'
 import FaceToFacePage from './components/FaceToFacePage'
 import AmbientPage from './components/AmbientPage'
 import MeetingPage from './components/MeetingPage'
+import CallModePage from './components/CallModePage'
 import SettingsPage from './components/SettingsPage'
 
-export type Route = 'home' | 'facetoface' | 'ambient' | 'meeting' | 'settings'
+export type Route = 'home' | 'facetoface' | 'ambient' | 'meeting' | 'call' | 'settings'
 
 export interface Turn {
   id: number
@@ -76,6 +77,18 @@ export default function App() {
       )}
       {route === 'meeting' && (
         <MeetingPage settings={settings} patch={patch} onBack={() => setRoute('home')} showToast={showToast} />
+      )}
+      {route === 'call' && (
+        <CallModePage
+          settings={settings}
+          patch={patch}
+          onBack={() => setRoute('home')}
+          showToast={showToast}
+          onTurn={(original, translated, from, to) => {
+            appendHistory({ time: Date.now(), from, to, original, translated })
+            setHistory(loadHistory())
+          }}
+        />
       )}
       {route === 'settings' && (
         <SettingsPage settings={settings} patch={patch} onBack={() => setRoute('home')} showToast={showToast} />

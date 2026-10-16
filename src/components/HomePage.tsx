@@ -26,7 +26,15 @@ export default function HomePage(props: {
       </header>
 
       <main className="home-modes">
-        <button className="mode-card primary" onClick={() => props.onGo('facetoface')}>
+        <button className="mode-card primary" onClick={() => props.onGo('call')}>
+          <div className="mode-icon">📞</div>
+          <div className="mode-body">
+            <div className="mode-title">电话翻译（免提旁听）</div>
+            <div className="mode-desc">手机开免提放电脑旁，双向自动交替翻译+大字幕+自动朗读。客户零配合。</div>
+          </div>
+          <div className="mode-arrow">›</div>
+        </button>
+        <button className="mode-card" onClick={() => props.onGo('facetoface')}>
           <div className="mode-icon">🗣️</div>
           <div className="mode-body">
             <div className="mode-title">面对面翻译</div>
