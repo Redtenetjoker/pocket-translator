@@ -23,21 +23,46 @@ export const LLM_PRESETS: { label: string; baseUrl: string; model: string }[] = 
 
 const cache = new Map<string, string>()
 
+/** 解析术语表（每行 “原文=译文”） */
+export function parseGlossary(glossary: string): { src: string; dst: string }[] {
+  return glossary
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line) => {
+      const i = line.indexOf('=')
+      if (i <= 0) return null
+      const src = line.slice(0, i).trim()
+      const dst = line.slice(i + 1).trim()
+      return src && dst ? { src, dst } : null
+    })
+    .filter((x): x is { src: string; dst: string } => x !== null)
+}
+
 export async function translate(
   text: string,
   from: string,
   to: string,
   kind: ProviderKind,
   llm: LlmConfig,
+  glossary?: string,
 ): Promise<string> {
-  const key = `${kind}|${from}|${to}|${text}`
+  const key = `${kind}|${from}|${to}|${text}|${glossary ?? ''}`
   const hit = cache.get(key)
   if (hit !== undefined) return hit
 
-  const out =
-    kind === 'llm' && llm.apiKey && llm.baseUrl
-      ? await translateByLlm(text, from, to, llm)
-      : await translateByMyMemory(text, from, to)
+  const terms = parseGlossary(glossary ?? '')
+  let out: string
+
+  if (kind === 'llm' && llm.apiKey && llm.baseUrl) {
+    out = await translateByLlm(text, from, to, llm, terms)
+  } else {
+    out = await translateByMyMemory(text, from, to)
+    // 免费通道术语兜底：把译文中的术语词直接替换
+    for (const t of terms) {
+      if (t.src && t.dst) out = out.split(t.src).join(t.dst)
+    }
+  }
 
   if (out) {
     if (cache.size > 500) cache.clear()
@@ -63,9 +88,21 @@ async function translateByMyMemory(text: string, from: string, to: string): Prom
   throw new Error('MyMemory 未返回译文')
 }
 
-async function translateByLlm(text: string, from: string, to: string, llm: LlmConfig): Promise<string> {
+async function translateByLlm(
+  text: string,
+  from: string,
+  to: string,
+  llm: LlmConfig,
+  terms: { src: string; dst: string }[] = [],
+): Promise<string> {
   const srcName = langByCode(from).name
   const dstName = langByCode(to).name
+  const glossaryRule =
+    terms.length > 0
+      ? '翻译时必须遵守以下术语表（原文=固定译法）：\n' +
+        terms.map((t) => `${t.src}=${t.dst}`).join('\n') +
+        '\n'
+      : ''
   const res = await fetch(llm.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
     method: 'POST',
     headers: {
@@ -81,6 +118,7 @@ async function translateByLlm(text: string, from: string, to: string, llm: LlmCo
           role: 'system',
           content:
             `你是专业的口语同声传译员。把用户输入的${srcName}翻译成${dstName}。` +
+            glossaryRule +
             '要求：只输出译文本身，不要解释、不要原文、不要引号；保持口语自然、简洁，适合当面交流。',
         },
         { role: 'user', content: text },
@@ -97,4 +135,42 @@ async function translateByLlm(text: string, from: string, to: string, llm: LlmCo
     return t.trim().replace(/^["“”']+|["“”']+$/g, '')
   }
   throw new Error('LLM 未返回译文')
+}
+
+/** 会议纪要生成（需要大模型通道） */
+export async function summarizeMeeting(
+  lines: { time: string; text: string }[],
+  llm: LlmConfig,
+): Promise<string> {
+  if (!llm.apiKey || !llm.baseUrl) throw new Error('请先在设置中配置大模型通道（智谱 glm-4-flash 免费）')
+  const transcript = lines.map((l) => `[${l.time}] ${l.text}`).join('\n')
+  const res = await fetch(llm.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${llm.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: llm.model,
+      temperature: 0.3,
+      max_tokens: 2048,
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是专业的会议秘书。根据用户提供的会议转写文本，用中文输出结构化会议纪要，' +
+            '包含：## 主题、## 要点（分条）、## 结论、## 待办事项（有的话）。语言精炼，不要编造未提及的内容。',
+        },
+        { role: 'user', content: transcript },
+      ],
+    }),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`LLM HTTP ${res.status} ${detail.slice(0, 160)}`)
+  }
+  const data = await res.json()
+  const t = data?.choices?.[0]?.message?.content
+  if (typeof t === 'string' && t.trim()) return t.trim()
+  throw new Error('LLM 未返回纪要')
 }

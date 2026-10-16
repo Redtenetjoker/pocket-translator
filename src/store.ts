@@ -9,6 +9,7 @@ export interface Settings {
   autoSpeak: boolean
   speakRate: number
   keepScreenOn: boolean
+  glossary: string // 术语表，每行 原文=译文
 }
 
 export interface HistoryItem {
@@ -30,6 +31,7 @@ export const defaultSettings: Settings = {
   autoSpeak: true,
   speakRate: 1,
   keepScreenOn: true,
+  glossary: '',
 }
 
 export function loadSettings(): Settings {

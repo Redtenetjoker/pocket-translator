@@ -42,6 +42,14 @@ export default function HomePage(props: {
           </div>
           <div className="mode-arrow">›</div>
         </button>
+        <button className="mode-card" onClick={() => props.onGo('meeting')}>
+          <div className="mode-icon">📝</div>
+          <div className="mode-body">
+            <div className="mode-title">会议记录</div>
+            <div className="mode-desc">连续转写为逐字稿，外语可逐句翻译，一键生成 AI 会议纪要。</div>
+          </div>
+          <div className="mode-arrow">›</div>
+        </button>
       </main>
 
       <section className="home-history">

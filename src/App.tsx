@@ -7,9 +7,10 @@ import { langByCode } from './languages'
 import HomePage from './components/HomePage'
 import FaceToFacePage from './components/FaceToFacePage'
 import AmbientPage from './components/AmbientPage'
+import MeetingPage from './components/MeetingPage'
 import SettingsPage from './components/SettingsPage'
 
-export type Route = 'home' | 'facetoface' | 'ambient' | 'settings'
+export type Route = 'home' | 'facetoface' | 'ambient' | 'meeting' | 'settings'
 
 export interface Turn {
   id: number
@@ -73,6 +74,9 @@ export default function App() {
           }}
         />
       )}
+      {route === 'meeting' && (
+        <MeetingPage settings={settings} patch={patch} onBack={() => setRoute('home')} showToast={showToast} />
+      )}
       {route === 'settings' && (
         <SettingsPage settings={settings} patch={patch} onBack={() => setRoute('home')} showToast={showToast} />
       )}
@@ -129,7 +133,16 @@ export function useTranslator(opts: {
       setTurns((list) => [...list, { id, side, original: text, translated: '…' }])
       setBusyTranslating(true)
       try {
-        const out = await translate(text, from, to, s.provider, s.llm)
+        let out = await translate(text, from, to, s.provider, s.llm, s.glossary)
+        // 免费通道方向错误时会原样返回：反向重试一次
+        if (
+          out.trim().toLowerCase() === text.trim().toLowerCase() &&
+          from !== to &&
+          fromOverride === undefined
+        ) {
+          const retry = await translate(text, to, from, s.provider, s.llm, s.glossary)
+          if (retry.trim().toLowerCase() !== text.trim().toLowerCase()) out = retry
+        }
         setTurns((list) => list.map((t) => (t.id === id ? { ...t, translated: out } : t)))
         onTurnRef.current(text, out, from, to)
         if (s.autoSpeak) {
@@ -188,6 +201,21 @@ export function useTranslator(opts: {
       sideRef.current = s
     },
   }
+}
+
+/** 打字输入的语言方向自动检测：一方是中日韩、另一方不是时，按文字是否含 CJK 判定 */
+export function detectTypedDirection(
+  text: string,
+  myLang: string,
+  otherLang: string,
+): { from: string; to: string; side: 'me' | 'other' } | null {
+  const cjkLangs = ['zh-CN', 'zh-TW', 'ja-JP', 'ko-KR']
+  const aCjk = cjkLangs.includes(myLang)
+  const bCjk = cjkLangs.includes(otherLang)
+  if (aCjk === bCjk) return null // 双方同类文字，无法判断
+  const hasCjk = /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(text)
+  if (hasCjk === aCjk) return { from: myLang, to: otherLang, side: 'me' }
+  return { from: otherLang, to: myLang, side: 'other' }
 }
 
 export function timeLabel(t: number): string {

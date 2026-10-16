@@ -153,6 +153,23 @@ export default function SettingsPage(props: {
       </section>
 
       <section className="card">
+        <div className="card-title">术语热词表</div>
+        <label className="field">
+          <span>每行一条：原文=固定译法（提升专业词汇/人名准确度）</span>
+          <textarea
+            className="glossary"
+            rows={5}
+            value={s.glossary}
+            onChange={(e) => patch({ glossary: e.target.value })}
+            placeholder={'例如：\n拔管=extubation\n张伟=Zhang Wei\n浦东机场=Pudong Airport'}
+          />
+        </label>
+        <p className="hint">
+          大模型通道会把术语表注入翻译规则；免费通道会在译文中做直接替换。
+        </p>
+      </section>
+
+      <section className="card">
         <div className="card-title">其他</div>
         <button className="row-btn" onClick={() => patch({ keepScreenOn: !s.keepScreenOn })}>
           <span>翻译时保持屏幕常亮</span>

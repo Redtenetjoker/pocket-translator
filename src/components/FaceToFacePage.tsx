@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useTranslator, langLabel, type Turn } from '../App'
+import { useTranslator, langLabel, detectTypedDirection, type Turn } from '../App'
 import type { Settings } from '../store'
 import { stopSpeaking } from '../tts'
 import { SpeechListener } from '../stt'
@@ -54,7 +54,12 @@ export default function FaceToFacePage(props: {
     const text = typed.trim()
     if (!text) return
     setTyped('')
-    void t.handleFinal(text, side ?? 'me')
+    const detected = detectTypedDirection(text, settings.myLang, settings.otherLang)
+    if (detected) {
+      void t.handleFinal(text, detected.side, detected.from, detected.to)
+    } else {
+      void t.handleFinal(text, side ?? 'me')
+    }
   }
 
   const lastTranslated = [...t.turns].reverse().find((x) => !x.error)
